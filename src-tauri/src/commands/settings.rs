@@ -146,36 +146,124 @@ pub async fn check_app_update(
     store: State<'_, Arc<SkillStore>>,
 ) -> Result<AppUpdateInfo, AppError> {
     let current_version = app.config().version.clone().unwrap_or_default();
+    let channel = app_update_channel(app.config().plugins.0.get("updater"))?;
     let proxy_url = store.proxy_url();
     tauri::async_runtime::spawn_blocking(move || {
         let client = skillssh_api::build_http_client(proxy_url.as_deref(), 15);
-
-        let resp: serde_json::Value = client
-            .get("https://api.github.com/repos/xingkongliang/skills-manager/releases/latest")
-            .send()
-            .map_err(|e| AppError::network(format!("Network error: {e}")))?
-            .json()
-            .map_err(|e| AppError::network(format!("Failed to parse response: {e}")))?;
-
-        let tag = resp["tag_name"]
-            .as_str()
-            .ok_or_else(|| AppError::network("No tag_name in response"))?;
-        let latest_version = tag.strip_prefix('v').unwrap_or(tag).to_string();
-        let release_url = resp["html_url"]
-            .as_str()
-            .unwrap_or("https://github.com/xingkongliang/skills-manager/releases")
-            .to_string();
-
-        let has_update = version_gt(&latest_version, &current_version);
-
-        Ok(AppUpdateInfo {
-            has_update,
-            current_version,
-            latest_version,
-            release_url,
+        fetch_app_update(&current_version, &channel, |url| {
+            let response = client
+                .get(url)
+                .send()
+                .map_err(|e| AppError::network(format!("Network error: {e}")))?;
+            let status = response.status().as_u16();
+            let body = response
+                .text()
+                .map_err(|e| AppError::network(format!("Failed to read response: {e}")))?;
+            Ok((status, body))
         })
     })
     .await?
+}
+
+struct AppUpdateChannel {
+    api_url: String,
+    releases_url: String,
+}
+
+/// Detection and installation must use the same GitHub release repository.
+fn app_update_channel(config: Option<&serde_json::Value>) -> Result<AppUpdateChannel, AppError> {
+    let config = config.ok_or_else(|| AppError::invalid_input("Missing updater configuration"))?;
+    let config: tauri_plugin_updater::Config = serde_json::from_value(config.clone())
+        .map_err(|e| AppError::invalid_input(format!("Invalid updater configuration: {e}")))?;
+    let mut channel: Option<AppUpdateChannel> = None;
+    for endpoint in config.endpoints {
+        let segments: Vec<_> = endpoint.path().split('/').collect();
+        let valid_repo_part = |part: &str| {
+            !part.is_empty()
+                && part != "."
+                && part != ".."
+                && part
+                    .bytes()
+                    .all(|c| c.is_ascii_alphanumeric() || b"._-".contains(&c))
+        };
+        if endpoint.scheme() != "https"
+            || endpoint.host_str() != Some("github.com")
+            || !endpoint.username().is_empty()
+            || endpoint.password().is_some()
+            || endpoint.port().is_some()
+            || endpoint.query().is_some()
+            || endpoint.fragment().is_some()
+            || segments.len() != 7
+            || !valid_repo_part(segments[1])
+            || !valid_repo_part(segments[2])
+            || segments[3..] != ["releases", "latest", "download", "latest.json"]
+        {
+            return Err(AppError::invalid_input(
+                "Updater endpoint must be https://github.com/<owner>/<repo>/releases/latest/download/latest.json",
+            ));
+        }
+        let repo = format!("{}/{}", segments[1], segments[2]);
+        let candidate = AppUpdateChannel {
+            api_url: format!("https://api.github.com/repos/{repo}/releases/latest"),
+            releases_url: format!("https://github.com/{repo}/releases"),
+        };
+        if channel
+            .as_ref()
+            .is_some_and(|c| c.api_url != candidate.api_url)
+        {
+            return Err(AppError::invalid_input(
+                "Updater endpoints must use the same GitHub repository",
+            ));
+        }
+        channel = Some(candidate);
+    }
+    channel.ok_or_else(|| AppError::invalid_input("No updater endpoints configured"))
+}
+
+fn fetch_app_update(
+    current_version: &str,
+    channel: &AppUpdateChannel,
+    fetch: impl FnOnce(&str) -> Result<(u16, String), AppError>,
+) -> Result<AppUpdateInfo, AppError> {
+    let (status, body) = fetch(&channel.api_url)?;
+    // A fork may have no published releases yet. GitHub returns 404 for that.
+    if status == 404 {
+        return Ok(AppUpdateInfo {
+            has_update: false,
+            current_version: current_version.to_string(),
+            latest_version: current_version.to_string(),
+            release_url: channel.releases_url.clone(),
+        });
+    }
+    if !(200..300).contains(&status) {
+        return Err(AppError::network(format!(
+            "GitHub release check failed with HTTP {status}"
+        )));
+    }
+    #[derive(serde::Deserialize)]
+    struct Release {
+        tag_name: String,
+    }
+    let release: Release = serde_json::from_str(&body)
+        .map_err(|e| AppError::network(format!("Failed to parse release response: {e}")))?;
+    let latest_version = release
+        .tag_name
+        .strip_prefix('v')
+        .unwrap_or(&release.tag_name);
+    let latest = Version::parse(latest_version)
+        .map_err(|e| AppError::network(format!("Invalid release version: {e}")))?;
+    let current = Version::parse(current_version)
+        .map_err(|e| AppError::invalid_input(format!("Invalid current app version: {e}")))?;
+    Ok(AppUpdateInfo {
+        has_update: latest > current,
+        current_version: current_version.to_string(),
+        latest_version: latest_version.to_string(),
+        release_url: format!(
+            "{}/tag/{}",
+            channel.releases_url,
+            urlencoding::encode(&release.tag_name)
+        ),
+    })
 }
 
 #[derive(serde::Serialize)]
@@ -600,6 +688,114 @@ pub async fn export_logs_zip(
 mod tests {
     use super::*;
 
+    fn fork_updater_config() -> serde_json::Value {
+        serde_json::json!({
+            "pubkey": "fork-public-key",
+            "endpoints": ["https://github.com/Nortus222/skills-manager/releases/latest/download/latest.json"]
+        })
+    }
+
+    #[test]
+    fn app_update_derives_fork_channel_and_requests_it() {
+        let config = fork_updater_config();
+        let channel = app_update_channel(Some(&config)).unwrap();
+        assert_eq!(
+            channel.releases_url,
+            "https://github.com/Nortus222/skills-manager/releases"
+        );
+        let update = fetch_app_update("1.0.0", &channel, |url| {
+            assert_eq!(url, "https://api.github.com/repos/Nortus222/skills-manager/releases/latest");
+            Ok((200, r#"{"tag_name":"v1.1.0","html_url":"https://github.com/xingkongliang/skills-manager/releases/tag/v1.1.0"}"#.into()))
+        }).unwrap();
+        assert!(update.has_update);
+        assert_eq!(
+            update.release_url,
+            "https://github.com/Nortus222/skills-manager/releases/tag/v1.1.0"
+        );
+    }
+
+    #[test]
+    fn app_update_rejects_invalid_or_mixed_channels() {
+        assert!(app_update_channel(None).is_err());
+        for endpoints in [
+            serde_json::json!([]),
+            serde_json::json!("not an array"),
+            serde_json::json!(["not a URL"]),
+            serde_json::json!(["https://github.com"]),
+            serde_json::json!(["https://updates.example.com/latest.json"]),
+            serde_json::json!(["https://github.com.evil.example/Nortus222/skills-manager/releases/latest/download/latest.json"]),
+            serde_json::json!(["https://user:pass@github.com/Nortus222/skills-manager/releases/latest/download/latest.json"]),
+            serde_json::json!(["https://github.com:444/Nortus222/skills-manager/releases/latest/download/latest.json"]),
+            serde_json::json!(["https://github.com/Nortus222/skills-manager/releases/latest/download/latest.json#other"]),
+            serde_json::json!(["http://github.com/Nortus222/skills-manager/releases/latest/download/latest.json"]),
+            serde_json::json!(["https://github.com/Nortus222/skills-manager/releases/download/v1.0.0/latest.json"]),
+            serde_json::json!(["https://github.com/Nortus222/skills-manager/releases/latest/download/latest.json?other=repo"]),
+            serde_json::json!([
+                "https://github.com/Nortus222/skills-manager/releases/latest/download/latest.json",
+                "https://github.com/xingkongliang/skills-manager/releases/latest/download/latest.json"
+            ]),
+        ] {
+            let mut config = fork_updater_config();
+            config["endpoints"] = endpoints;
+            assert!(app_update_channel(Some(&config)).is_err(), "accepted {config}");
+        }
+    }
+
+    #[test]
+    fn app_update_without_published_releases_is_not_an_error() {
+        let channel = app_update_channel(Some(&fork_updater_config())).unwrap();
+        let update =
+            fetch_app_update("1.0.0", &channel, |_| Ok((404, "Not Found".into()))).unwrap();
+        assert!(!update.has_update);
+        assert_eq!(update.current_version, "1.0.0");
+        assert_eq!(update.latest_version, "1.0.0");
+        assert_eq!(
+            update.release_url,
+            "https://github.com/Nortus222/skills-manager/releases"
+        );
+    }
+
+    #[test]
+    fn app_update_compares_semver_including_prereleases() {
+        let channel = app_update_channel(Some(&fork_updater_config())).unwrap();
+        for (current, latest, expected) in [
+            ("1.0.0", "v1.1.0", true),
+            ("1.0.0", "1.0.0", false),
+            ("1.1.0", "v1.0.0", false),
+            ("1.1.0-beta.1", "v1.1.0-beta.2", true),
+            ("1.1.0", "v1.1.0-beta.2", false),
+            ("1.1.0-beta.2", "v1.1.0", true),
+        ] {
+            let body = serde_json::json!({ "tag_name": latest }).to_string();
+            let update = fetch_app_update(current, &channel, |_| Ok((200, body))).unwrap();
+            assert_eq!(update.has_update, expected, "{current} -> {latest}");
+            assert_eq!(update.latest_version, latest.trim_start_matches('v'));
+        }
+    }
+
+    #[test]
+    fn app_update_surfaces_http_network_and_malformed_release_errors() {
+        let channel = app_update_channel(Some(&fork_updater_config())).unwrap();
+        for (status, body) in [
+            (500, r#"{"tag_name":"v2.0.0"}"#),
+            (403, r#"{"tag_name":"v2.0.0"}"#),
+            (200, "not JSON"),
+            (200, "{}"),
+            (200, r#"{"tag_name": 200}"#),
+            (200, r#"{"tag_name":"garbage"}"#),
+        ] {
+            let result = fetch_app_update("1.0.0", &channel, |_| Ok((status, body.into())));
+            let error = result.err().unwrap_or_else(|| panic!("accepted HTTP {status}: {body}"));
+            assert_eq!(error.kind, crate::core::error::ErrorKind::Network);
+        }
+        let error = fetch_app_update("1.0.0", &channel, |_| {
+            Err(AppError::network("connection failed"))
+        })
+        .err()
+        .unwrap();
+        assert_eq!(error.message, "connection failed");
+    }
+
     #[test]
     fn collapses_repeated_tray_lines_old_format() {
         let log = "\
@@ -740,15 +936,4 @@ pub async fn hide_to_tray(
     #[cfg(not(target_os = "macos"))]
     let _ = app;
     Ok(())
-}
-
-fn version_gt(a: &str, b: &str) -> bool {
-    // Prefer strict SemVer comparison (supports pre-release/build metadata).
-    if let (Ok(a_ver), Ok(b_ver)) = (Version::parse(a), Version::parse(b)) {
-        return a_ver > b_ver;
-    }
-
-    // Fallback for non-SemVer tags.
-    let parse = |s: &str| -> Vec<u64> { s.split('.').filter_map(|p| p.parse().ok()).collect() };
-    parse(a) > parse(b)
 }

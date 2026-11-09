@@ -1120,6 +1120,11 @@ pub fn run() {
             commands::agent_workspace::update_global_local_skill_from_center,
             commands::agent_workspace::delete_global_local_skill,
             // Presets
+            commands::followed_presets::preview_followed_preset,
+            commands::followed_presets::apply_followed_preset,
+            commands::followed_presets::get_followed_presets,
+            commands::followed_presets::unfollow_preset,
+            commands::followed_presets::export_preset_recipe,
             commands::presets::get_presets,
             commands::presets::get_active_preset,
             commands::presets::create_preset,

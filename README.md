@@ -129,6 +129,60 @@ It is also an ordinary published skill, so it can be installed without the app:
 npx skills add xingkongliang/skills-manager
 ```
 
+## Shared presets in this fork
+
+Publish a preset's skill selection once and let other people follow later changes.
+The upstream skill authors retain their authorship and license; this fork retains
+Skills Manager's MIT license.
+
+1. Open **Shared presets**, choose a local preset, and copy its recipe.
+2. Save that JSON in a public GitHub repository. Share its GitHub file URL or
+   `raw.githubusercontent.com` URL. Update that same file when the preset changes.
+3. Recipients open **Shared presets**, paste the URL, and preview it. Applying
+   installs missing skills into their library and records the followed selection.
+4. While the app is running, it checks followed sources at startup and hourly.
+   Recipients can also check manually. Updates are reviewed before applying.
+
+Recipes contain a name, optional description, and a list of skill names with
+GitHub install references. The existing
+[Nortus development recipe](https://github.com/Nortus222/claude-config/blob/chore/share-development-preset/presets/nortus-development.json)
+uses this format. Recipe URLs must be public HTTPS GitHub file URLs; private
+repository authentication is outside this first version. Skill references support
+repository roots containing `SKILL.md` or explicit skill paths on branches/tags.
+Commit-SHA-pinned source export is not supported in this first version.
+
+A followed preset updates library membership. Existing preset pills deploy it to
+agents. Removing a member leaves its installed files and deployments in place;
+unfollowing leaves the preset intact. Personal additions and removals are
+preserved. A publisher changing the source of an already-installed skill produces
+a conflict for review, rather than overwriting that skill's source.
+
+Skill content still updates through the normal upstream update checker. Recipe
+updates describe the skill selection; they do not distribute copied skill files.
+
+The same workflow is available to agents through the CLI:
+
+```sh
+skills-manager-cli --json presets follow <public-github-file-url> --dry-run
+skills-manager-cli --json presets follow <public-github-file-url> --revision <preview-revision>
+skills-manager-cli --json presets subscriptions
+skills-manager-cli --json presets check-followed
+skills-manager-cli --json presets export "My preset"
+skills-manager-cli --json presets unfollow <public-github-file-url>
+```
+
+Apply fetches the recipe again and refuses an outdated preview. Local membership
+and subscription state are preserved across app restarts. Following does not
+connect recipients to the publisher's private backup repository. Run the fork's
+app or CLI for this feature; the upstream installed app does not include it.
+
+## Fork app updates
+
+This fork uses its own GitHub release endpoint and updater public key. See
+[Releasing](RELEASING.md) for Apple credentials, release gates and the one-time
+bootstrap from builds that still point upstream. No release is available until
+the signed publication workflow succeeds.
+
 ## Backup & Multi-Device Sync
 
 The **Backup** page (sidebar) keeps your skill library versioned in a Git repository. One device gets versioned backup with restorable snapshots; several devices connected to the same repository stay in sync with each other automatically. The remote stays a plain Git repository — you can `git clone` it anywhere, no lock-in.
