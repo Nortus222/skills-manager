@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.43.4] - 2026-11-09
+
+### Release Overview
+- First release from the Nortus fork, adding shareable presets and a signed app update channel hosted in `Nortus222/skills-manager`.
+
+### User-facing
+- Export a preset as a JSON recipe containing skill source references, then share its public GitHub URL independently of your private library backup.
+- Follow a public preset, preview its changes, and apply updates explicitly. The app checks followed presets at startup and hourly while running. Local membership edits are preserved, and skills removed by the author remain in your library.
+- Manage followed presets from the Shared presets screen or the CLI. Following installs missing skills into the library; deployment remains a separate action. Subscriptions are stored on the current machine.
+- App update checks and installation use the Nortus fork's releases and updater signing key. Existing upstream installations need a manual installation of the fork before they can receive fork updates.
+
+### Developer & Governance
+- The release workflow embeds the CLI companion before macOS signing and notarization, then verifies all five platform payloads against the fork's updater key before publishing the draft.
+- Release preparation keeps the npm, Tauri and Cargo versions at `1.43.4`. Apple signing and notarization credentials and the updater private key are held in GitHub Actions secrets.
+
 ## [1.43.3] - 2026-11-03
 
 ### Release Overview
