@@ -176,6 +176,13 @@ and subscription state are preserved across app restarts. Following does not
 connect recipients to the publisher's private backup repository. Run the fork's
 app or CLI for this feature; the upstream installed app does not include it.
 
+## Fork app updates
+
+This fork uses its own GitHub release endpoint and updater public key. See
+[Releasing](RELEASING.md) for Apple credentials, release gates and the one-time
+bootstrap from builds that still point upstream. No release is available until
+the signed publication workflow succeeds.
+
 ## Backup & Multi-Device Sync
 
 The **Backup** page (sidebar) keeps your skill library versioned in a Git repository. One device gets versioned backup with restorable snapshots; several devices connected to the same repository stay in sync with each other automatically. The remote stays a plain Git repository — you can `git clone` it anywhere, no lock-in.

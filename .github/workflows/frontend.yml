@@ -16,6 +16,10 @@ on:
       - 'tailwind.config.js'
       - 'postcss.config.js'
       - 'scripts/check-ui-spec.mjs'
+      - 'scripts/release-channel*.mjs'
+      - 'src-tauri/tauri*.conf.json'
+      - 'src-tauri/updater.pub'
+      - '.github/workflows/release.yml'
       - '.github/workflows/frontend.yml'
   pull_request:
     paths:
@@ -29,6 +33,10 @@ on:
       - 'tailwind.config.js'
       - 'postcss.config.js'
       - 'scripts/check-ui-spec.mjs'
+      - 'scripts/release-channel*.mjs'
+      - 'src-tauri/tauri*.conf.json'
+      - 'src-tauri/updater.pub'
+      - '.github/workflows/release.yml'
       - '.github/workflows/frontend.yml'
 
 permissions:

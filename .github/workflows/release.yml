@@ -6,6 +6,10 @@ on:
       - 'v*'
   workflow_dispatch:
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -51,6 +55,13 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Verify fork release channel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: node scripts/release-channel.mjs preflight
+
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
         with:
@@ -91,6 +102,9 @@ jobs:
           --manifest-path src-tauri/Cargo.toml
           --bin skills-manager-cli
           --target ${{ matrix.target }}
+
+      - name: Stage bundled CLI companion
+        run: node scripts/release-channel.mjs stage-cli ${{ matrix.target }}
 
       - name: Extract changelog for current version
         id: changelog
@@ -220,7 +234,7 @@ jobs:
           releaseDraft: true
           prerelease: false
           updaterJsonKeepUniversal: true
-          args: --target ${{ matrix.target }}
+          args: --target ${{ matrix.target }} --config src-tauri/tauri.release.conf.json
 
       - name: Verify macOS signature and notarization
         if: startsWith(matrix.platform, 'macos')
@@ -395,87 +409,20 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     name: Verify updater assets
+    timeout-minutes: 30
     steps:
-      - name: Validate updater metadata and signatures
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Install signature verifier
+        run: sudo apt-get update && sudo apt-get install -y minisign
+      - name: Verify all signed updater payloads
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-
-          # The release is still a draft at this point, and /releases/tags/{tag}
-          # returns 404 for drafts, so it has to be located by listing.
-          releases_json=$(curl -fsSL \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPO}/releases?per_page=100")
-
-          release_json=$(echo "$releases_json" | jq --arg t "$TAG" '.[] | select(.tag_name == $t)')
-          if [ -z "$release_json" ]; then
-            echo "No release found for tag ${TAG}" >&2
-            exit 1
-          fi
-
-          asset_names=$(echo "$release_json" | jq -r '.assets[]?.name')
-          echo "Assets on the draft release:"
-          echo "$asset_names" | sed 's/^/  /'
-
-          if ! echo "$asset_names" | grep -qx 'latest.json'; then
-            echo "Missing updater metadata asset: latest.json" >&2
-            exit 1
-          fi
-
-          if ! echo "$asset_names" | grep -q '\.sig'; then
-            echo "Missing updater signature assets (*.sig)" >&2
-            exit 1
-          fi
-
-          fail=0
-          for cli_asset in \
-            skills-manager-cli-macOS-arm64 \
-            skills-manager-cli-macOS-x64 \
-            skills-manager-cli-Windows-x64.exe \
-            skills-manager-cli-Linux-x64; do
-            if ! echo "$asset_names" | grep -qx "$cli_asset"; then
-              echo "Missing CLI release asset: ${cli_asset}" >&2
-              fail=1
-            fi
-          done
-
-          # Draft assets are not served from the public download host, so fetch
-          # latest.json through the authenticated asset endpoint.
-          asset_id=$(echo "$release_json" | jq -r '.assets[] | select(.name == "latest.json") | .id')
-          curl -fsSL \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/octet-stream" \
-            "https://api.github.com/repos/${REPO}/releases/assets/${asset_id}" -o /tmp/latest.json
-
-          # v1.29.0 published with no darwin entries at all because only Windows
-          # and Linux were asserted here, so every shipped platform is checked now.
-          for platform in darwin-aarch64 darwin-x86_64 windows-x86_64 linux-x86_64; do
-            if ! jq -e --arg p "$platform" '.platforms[$p].signature and .platforms[$p].url' /tmp/latest.json >/dev/null; then
-              echo "latest.json is missing a signed updater entry for ${platform}" >&2
-              fail=1
-            fi
-          done
-
-          # A macOS leg that dies during notarization still leaves the release
-          # looking plausible, so require its user-facing artifacts too.
-          for pattern in '\.dmg$' '\.app\.tar\.gz$'; do
-            if ! echo "$asset_names" | grep -qE "$pattern"; then
-              echo "Missing macOS asset matching ${pattern}" >&2
-              fail=1
-            fi
-          done
-
-          if [ "$fail" -ne 0 ]; then
-            echo "--- latest.json ---" >&2
-            cat /tmp/latest.json >&2
-            exit 1
-          fi
-
-          echo "Updater assets validation passed"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/release-channel.mjs verify
 
   publish-release:
     needs: [build, verify-updater-assets]
@@ -494,23 +441,3 @@ jobs:
             --repo "${{ github.repository }}" \
             --draft=false
           echo "Published ${{ github.ref_name }}"
-
-      # skillsmanager.dev reads the version and download links from the GitHub
-      # API behind an hourly ISR cache, so a low-traffic page can advertise the
-      # previous release long after it shipped. Rebuilding on publish keeps the
-      # site in step. The hook is optional, and a failed rebuild must not turn a
-      # successful release red — the site catches up on its own within the hour.
-      - name: Rebuild skillsmanager.dev
-        env:
-          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
-        run: |
-          set -uo pipefail
-          if [ -z "${HOOK:-}" ]; then
-            echo "VERCEL_DEPLOY_HOOK_URL not set — skipping site rebuild."
-            exit 0
-          fi
-          if curl -fsS -X POST "$HOOK" -o /dev/null; then
-            echo "Triggered a skillsmanager.dev rebuild."
-          else
-            echo "::warning::Deploy hook failed; skillsmanager.dev will refresh on its own."
-          fi
