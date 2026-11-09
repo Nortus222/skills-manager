@@ -297,6 +297,33 @@ The no-`--agent` defaults intentionally differ: deploy targets all installed, en
 
 Preset create/update/delete and add-skill/remove-skill are organization-only CLI operations. They never deploy or undeploy agent files implicitly.
 
+## Follow shared presets in the Nortus fork
+
+This section requires the Nortus fork's app-published CLI. Upstream versions do
+not expose these commands. A shared recipe is public GitHub JSON containing
+`name`, optional `description`, and `skills: [{name, install_ref}]`.
+
+```bash
+"$SM" --json presets export "Web Dev"
+"$SM" --json presets follow <github-file-url> --dry-run
+"$SM" --json presets follow <github-file-url> --revision <reviewed-revision>
+"$SM" --json presets subscriptions
+"$SM" --json presets check-followed
+"$SM" --json presets unfollow <github-file-url>
+```
+
+Resolve the CLI as usual and substitute its printed path. Publish exported JSON
+in a public GitHub repository and share that file URL. Review additions,
+removals and source conflicts from `follow --dry-run` before passing the returned
+revision to apply. An apply refetches and refuses a changed recipe. Source
+conflicts require an explicit library decision; never force a source change.
+
+Following installs missing skills into the library and reconciles preset
+membership against the last applied recipe. Personal membership changes survive.
+It does not deploy skills or delete installed files. Use an explicit preset
+deployment after review when requested. Unfollow removes only the subscription.
+Skill content updates still use `skills check` and `skills update`.
+
 ## Health check
 
 When sync misbehaves or a command errors in a confusing way:

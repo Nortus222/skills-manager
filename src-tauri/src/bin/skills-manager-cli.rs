@@ -5,7 +5,8 @@ use std::sync::Arc;
 use anyhow::{Context, anyhow, bail};
 use app_lib::commands::{presets as preset_cmd, skills as cmd, tools as tool_cmd};
 use app_lib::core::{
-    app_state, audit_log::AuditDraft, central_repo, error::AppError, git_backup, git_fetcher,
+    app_state, audit_log::AuditDraft, central_repo, error::AppError, followed_presets, git_backup,
+    git_fetcher,
     installer, merge, repo_lock::RepoLock, scenario_service, skill_metadata,
     skill_store::SkillStore, skillssh_api, sync_engine, sync_metadata, tool_adapters, tool_service,
     well_known,
@@ -285,6 +286,26 @@ struct PresetArgs {
 
 #[derive(Subcommand, Debug)]
 enum PresetCommand {
+    /// Fetch and preview a public recipe, or apply its reviewed revision.
+    Follow {
+        source_url: String,
+        #[arg(long, conflicts_with = "revision")]
+        dry_run: bool,
+        #[arg(long, required_unless_present = "dry_run", conflicts_with = "dry_run")]
+        revision: Option<String>,
+    },
+    /// List recipe subscriptions without fetching remote content.
+    Subscriptions,
+    /// Check followed recipe revisions without changing library membership.
+    CheckFollowed,
+    /// Stop following a recipe, preserving the preset and installed skills.
+    Unfollow {
+        source_url: String,
+    },
+    /// Export a preset's Git-backed skill references for publishing.
+    Export {
+        reference: String,
+    },
     List,
     Current,
     Show {
@@ -2497,6 +2518,56 @@ fn run_tag(args: TagArgs, store: &SkillStore, json: bool) -> anyhow::Result<()> 
 
 fn run_presets(args: PresetArgs, store: &SkillStore, json: bool) -> anyhow::Result<()> {
     match args.command {
+        PresetCommand::Follow {
+            source_url,
+            dry_run,
+            revision,
+        } => {
+            if dry_run {
+                print_json(
+                    &followed_presets::preview(store, &source_url).map_err(map_app_err)?,
+                    json,
+                );
+            } else {
+                let revision =
+                    revision.ok_or_else(|| anyhow!("preview first, then pass --revision"))?;
+                print_json(
+                    &followed_presets::apply(store, &source_url, &revision).map_err(map_app_err)?,
+                    json,
+                );
+            }
+        }
+        PresetCommand::Subscriptions => {
+            print_json(&followed_presets::list(store).map_err(map_app_err)?, json);
+        }
+        PresetCommand::CheckFollowed => {
+            let subscriptions = followed_presets::list(store).map_err(map_app_err)?;
+            let mut reports = Vec::new();
+            for subscription in subscriptions {
+                let preview = followed_presets::preview(store, &subscription.source_url)
+                    .map_err(map_app_err)?;
+                reports.push(serde_json::json!({
+                    "source_url": subscription.source_url,
+                    "update_available": preview.revision != subscription.revision,
+                    "preview": preview,
+                }));
+            }
+            print_json(&reports, json);
+        }
+        PresetCommand::Unfollow { source_url } => {
+            followed_presets::unfollow(store, &source_url).map_err(map_app_err)?;
+            print_json(
+                &serde_json::json!({"ok": true, "source_url": source_url}),
+                json,
+            );
+        }
+        PresetCommand::Export { reference } => {
+            let preset = resolve_scenario(store, &reference)?;
+            print_json(
+                &followed_presets::export(store, &preset.id).map_err(map_app_err)?,
+                true,
+            );
+        }
         PresetCommand::List => print_json(&list_presets(store)?, json),
         PresetCommand::Current => print_json(&current_preset(store)?, json),
         PresetCommand::Show { reference } => {
@@ -3360,6 +3431,42 @@ mod tests {
         }
         assert_eq!(fs::read_to_string(target.join("mine.txt")).unwrap(), "keep");
         assert!(store.get_all_targets().unwrap().is_empty());
+    }
+
+    #[test]
+    fn followed_presets_require_preview_or_an_approved_revision() {
+        let url = "https://github.com/owner/repo/blob/main/presets/dev.json";
+        assert!(Cli::try_parse_from(["skills-manager-cli", "presets", "follow", url]).is_err());
+        assert!(
+            Cli::try_parse_from(["skills-manager-cli", "presets", "follow", url, "--dry-run"])
+                .is_ok()
+        );
+        assert!(Cli::try_parse_from([
+            "skills-manager-cli",
+            "presets",
+            "follow",
+            url,
+            "--revision",
+            "abc"
+        ])
+        .is_ok());
+        assert!(Cli::try_parse_from([
+            "skills-manager-cli",
+            "presets",
+            "follow",
+            url,
+            "--dry-run",
+            "--revision",
+            "abc"
+        ])
+        .is_err());
+        for command in ["subscriptions", "check-followed"] {
+            assert!(Cli::try_parse_from(["skills-manager-cli", "presets", command]).is_ok());
+        }
+        assert!(Cli::try_parse_from(["skills-manager-cli", "presets", "unfollow", url]).is_ok());
+        assert!(
+            Cli::try_parse_from(["skills-manager-cli", "presets", "export", "Web Dev"]).is_ok()
+        );
     }
 
     #[test]

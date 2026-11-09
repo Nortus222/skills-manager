@@ -13,7 +13,8 @@
     "newPreset": "新建 Preset",
     "projects": "项目工作区",
     "addProject": "关联项目",
-    "settings": "设置"
+    "settings": "设置",
+    "sharedPresets": "共享预设"
   },
   "help": {
     "eyebrow": "操作指南",
@@ -1131,5 +1132,46 @@
       "deletedLocalBatch": "已删除 {{count}} 个本地 Skill",
       "deleteLocalBatchFailed": "{{count}} 个本地 Skill 删除失败"
     }
+  },
+  "sharedPresets": {
+    "title": "共享预设",
+    "description": "关注公开的 GitHub 配方，先审阅变更，再将其应用到技能库。",
+    "followTitle": "关注预设",
+    "urlLabel": "公开的 GitHub 配方链接",
+    "urlPlaceholder": "https://github.com/owner/repository/blob/main/preset.json",
+    "preview": "预览",
+    "revision": "配方版本：{{revision}}",
+    "members": "配方技能及来源",
+    "additions": "添加到预设",
+    "removals": "从预设移除",
+    "conflicts": "来源冲突",
+    "none": "无",
+    "removalHint": "移除仅影响预设成员关系。技能仍保留在技能库中，现有的智能体部署也会保留。",
+    "conflictHint": "这些名称已被不同来源的技能使用。请先解决来源冲突，再应用配方。",
+    "deployHint": "应用配方只更新技能库中的预设成员。请使用工作区现有的预设按钮将技能部署到智能体。",
+    "apply": "应用已审阅的配方",
+    "applied": "预设配方已应用到技能库",
+    "followedTitle": "已关注的预设",
+    "checkAll": "检查所有更新",
+    "checkHint": "应用启动时及运行期间每小时检查配方。可用变更不会自动应用。",
+    "empty": "尚未关注任何预设。",
+    "updateAvailable": "有可用更新",
+    "upToDate": "配方已是最新版本",
+    "notChecked": "尚未检查",
+    "check": "检查并预览",
+    "review": "审阅更新",
+    "unfollow": "取消关注",
+    "unfollowed": "已取消关注此预设",
+    "unfollowHint": "取消关注会保留预设、技能库中的技能及现有的智能体部署。",
+    "shareTitle": "共享本地预设",
+    "publishHint": "将预设配方复制为 JSON，保存到公开的 GitHub 仓库中，然后分享其 GitHub 文件链接或原始文件链接。接收者可将链接粘贴到此处以关注预设。",
+    "localPreset": "本地预设",
+    "choosePreset": "选择预设",
+    "copyRecipe": "复制配方 JSON",
+    "copied": "已复制配方 JSON",
+    "busy": "已有预设操作正在进行，请在完成后重试。",
+    "updateNotification": "共享预设 {{name}} 有可用更新。",
+    "checkFailed": "无法检查 {{name}}：{{message}}",
+    "checkUnavailable": "更新检查失败"
   }
 }

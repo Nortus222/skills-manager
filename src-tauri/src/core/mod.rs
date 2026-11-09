@@ -8,6 +8,7 @@ pub mod crypto;
 pub mod error;
 pub mod file_manager;
 pub mod file_watcher;
+pub mod followed_presets;
 pub mod git2_engine;
 pub mod git_backup;
 mod git_command;

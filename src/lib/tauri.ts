@@ -109,6 +109,29 @@ export interface Preset {
   updated_at: number;
 }
 
+export interface PresetRecipe {
+  name: string;
+  description: string | null;
+  skills: { name: string; install_ref: string }[];
+}
+
+export interface FollowedPreset {
+  preset_id: string;
+  name: string;
+  source_url: string;
+  revision: string;
+}
+
+export interface FollowedPresetPreview {
+  source_url: string;
+  revision: string;
+  recipe: PresetRecipe;
+  preset_id: string | null;
+  additions: string[];
+  removals: string[];
+  conflicts: string[];
+}
+
 export interface DiscoveredGroup {
   name: string;
   fingerprint: string | null;
@@ -862,3 +885,20 @@ export const updateGlobalLocalSkillFromCenter = (agent: string, skillRelativePat
 
 export const deleteGlobalLocalSkill = (agent: string, skillRelativePath: string) =>
   invoke<void>("delete_global_local_skill", { agent, skillRelativePath });
+
+// ── Shared presets ──
+
+export const getFollowedPresets = () =>
+  invoke<FollowedPreset[]>("get_followed_presets");
+
+export const previewFollowedPreset = (sourceUrl: string) =>
+  invoke<FollowedPresetPreview>("preview_followed_preset", { sourceUrl });
+
+export const applyFollowedPreset = (sourceUrl: string, expectedRevision: string) =>
+  invoke<FollowedPreset>("apply_followed_preset", { sourceUrl, expectedRevision });
+
+export const unfollowPreset = (sourceUrl: string) =>
+  invoke<void>("unfollow_preset", { sourceUrl });
+
+export const exportPresetRecipe = (presetId: string) =>
+  invoke<PresetRecipe>("export_preset_recipe", { presetId });

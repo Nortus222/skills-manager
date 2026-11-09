@@ -1576,6 +1576,139 @@ pub fn parse_git_source_resolved(url: &str, proxy_url: Option<&str>) -> ParsedGi
     parsed
 }
 
+/// Resolve tree URLs without guessing a branch after lookup failure. Remote
+/// refs are fetched once per repository for this batch, outside library locks.
+pub struct StrictGitSource {
+    pub source: ParsedGitSource,
+    pub default_branch: String,
+}
+pub fn parse_git_sources_strict(
+    urls: &[String],
+    proxy_url: Option<&str>,
+    cancel: Option<&Arc<AtomicBool>>,
+) -> Result<Vec<StrictGitSource>> {
+    let mut repositories = std::collections::HashMap::new();
+    let mut sources = Vec::new();
+    for url in urls {
+        let clone_url = parse_git_source(url).clone_url;
+        if !repositories.contains_key(&clone_url) {
+            repositories.insert(
+                clone_url.clone(),
+                strict_remote_ref_names(&clone_url, proxy_url, cancel)?,
+            );
+        }
+        let (refs, default_branch) = &repositories[&clone_url];
+        let mut source = parse_git_source_with_refs_strict(url, refs)?;
+        if source.branch.is_none() {
+            source.branch = Some(default_branch.clone());
+        }
+        sources.push(StrictGitSource {
+            source,
+            default_branch: default_branch.clone(),
+        });
+    }
+    Ok(sources)
+}
+fn parse_git_source_with_refs_strict(url: &str, known: &RemoteRefNames) -> Result<ParsedGitSource> {
+    let mut parsed = parse_git_source(url);
+    let Some((_, path)) = parse_github_tree_url_path(url) else {
+        return Ok(parsed);
+    };
+    if path == "HEAD" || path.starts_with("HEAD/") {
+        parsed.branch = None;
+        parsed.subpath = path.strip_prefix("HEAD/").map(str::to_string);
+        return Ok(parsed);
+    }
+    if match_known_ref(&path, &known.heads)
+        .or_else(|| match_known_ref(&path, &known.tags))
+        .is_none()
+    {
+        bail!("Cannot resolve the recipe's GitHub branch or tag: {url}");
+    }
+    let (branch, subpath) = split_tree_path_with_known_refs(&path, known);
+    parsed.branch = Some(branch);
+    parsed.subpath = subpath;
+    Ok(parsed)
+}
+
+/// Capture a bounded ref listing while retaining the normal git timeout and
+/// cancellation behavior. Stderr is discarded so credentials cannot leak.
+fn strict_remote_ref_names(
+    url: &str,
+    proxy_url: Option<&str>,
+    cancel: Option<&Arc<AtomicBool>>,
+) -> Result<(RemoteRefNames, String)> {
+    const MAX_REF_BYTES: usize = 4 * 1024 * 1024;
+    let mut command = git_command();
+    if let Some(proxy) = proxy_url.filter(|s| !s.is_empty()) {
+        command.arg("-c").arg(format!("http.proxy={proxy}"));
+        command.arg("-c").arg(format!("https.proxy={proxy}"));
+    }
+    let mut child = command
+        .args([
+            "ls-remote",
+            "--symref",
+            url,
+            "HEAD",
+            "refs/heads/*",
+            "refs/tags/*",
+        ])
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("GCM_INTERACTIVE", "never")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .context("Failed to list recipe skill refs")?;
+    let stdout = child
+        .stdout
+        .take()
+        .context("Git ref listing has no stdout")?;
+    let reader = std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        stdout
+            .take((MAX_REF_BYTES + 1) as u64)
+            .read_to_end(&mut bytes)
+            .map(|_| bytes)
+    });
+    let start = Instant::now();
+    let status = loop {
+        if cancel.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+            break Err(anyhow::anyhow!("Git ref listing cancelled"));
+        }
+        if start.elapsed() >= Duration::from_secs(20) {
+            break Err(anyhow::anyhow!("Git ref listing timed out"));
+        }
+        match child.try_wait() {
+            Ok(Some(status)) => break Ok(status),
+            Ok(None) => std::thread::sleep(Duration::from_millis(25)),
+            Err(error) => break Err(error.into()),
+        }
+    };
+    if status.is_err() {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+    let bytes = reader
+        .join()
+        .map_err(|_| anyhow::anyhow!("Git ref reader failed"))??;
+    if bytes.len() > MAX_REF_BYTES {
+        bail!("Recipe skill ref listing exceeds 4 MiB");
+    }
+    if !status?.success() {
+        bail!("Failed to list recipe skill refs");
+    }
+    let stdout = String::from_utf8(bytes)?;
+    let default_branch = stdout
+        .lines()
+        .find_map(|line| {
+            line.strip_prefix("ref: refs/heads/")
+                .and_then(|s| s.strip_suffix("\tHEAD"))
+        })
+        .ok_or_else(|| anyhow::anyhow!("Remote has no default branch"))?
+        .to_string();
+    Ok((parse_remote_ref_names(&stdout), default_branch))
+}
+
 /// Branch and tag names on the remote, used to split a `tree/<path>` URL.
 ///
 /// Tags count: `tree/release/v1.0/skills/foo` is as valid a tag URL as it is a
@@ -1704,6 +1837,60 @@ mod tests {
     use std::fs;
     use tempfile::tempdir;
 
+    #[test]
+    fn strict_tree_resolution_uses_longest_branch_and_fails_closed() {
+        let refs = RemoteRefNames {
+            heads: vec!["main".into(), "feature/x".into()],
+            tags: vec!["v1".into()],
+        };
+        let source = parse_git_source_with_refs_strict(
+            "https://github.com/team/skills/tree/feature/x/skills/a",
+            &refs,
+        )
+        .unwrap();
+        assert_eq!(source.branch.as_deref(), Some("feature/x"));
+        assert_eq!(source.subpath.as_deref(), Some("skills/a"));
+        assert!(parse_git_source_with_refs_strict(
+            "https://github.com/team/skills/tree/unknown/skills/a",
+            &refs
+        )
+        .is_err());
+        assert!(parse_git_source_with_refs_strict(
+            "https://github.com/team/skills/tree/main/skills/a",
+            &RemoteRefNames::default()
+        )
+        .is_err());
+        let root = parse_git_source_with_refs_strict(
+            "https://github.com/team/skills/tree/HEAD/skills/a",
+            &refs,
+        )
+        .unwrap();
+        assert!(root.branch.is_none());
+        assert_eq!(root.subpath.as_deref(), Some("skills/a"));
+    }
+
+    #[test]
+    fn strict_ref_listing_reads_default_branch_offline_and_supports_cancellation() {
+        let temp = tempdir().unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        repo.set_head("refs/heads/main").unwrap();
+        let tree_id = repo.index().unwrap().write_tree().unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+        let author = git2::Signature::now("Test", "test@example.com").unwrap();
+        repo.commit(Some("HEAD"), &author, &author, "initial", &tree, &[])
+            .unwrap();
+        let (refs, default_branch) =
+            strict_remote_ref_names(temp.path().to_str().unwrap(), None, None).unwrap();
+        assert_eq!(default_branch, "main");
+        assert!(refs.heads.contains(&"main".into()));
+        let cancel = Arc::new(AtomicBool::new(true));
+        assert!(
+            strict_remote_ref_names(temp.path().to_str().unwrap(), None, Some(&cancel))
+                .unwrap_err()
+                .to_string()
+                .contains("cancelled")
+        );
+    }
     // ── parse_git_source ──
 
     #[test]

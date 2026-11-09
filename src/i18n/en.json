@@ -13,7 +13,8 @@
     "newPreset": "New Preset",
     "projects": "Project Workspaces",
     "addProject": "Link Project",
-    "settings": "Settings"
+    "settings": "Settings",
+    "sharedPresets": "Shared presets"
   },
   "help": {
     "eyebrow": "Guide",
@@ -1131,5 +1132,46 @@
       "deletedLocalBatch": "{{count}} local skills deleted",
       "deleteLocalBatchFailed": "{{count}} local skills failed to delete"
     }
+  },
+  "sharedPresets": {
+    "title": "Shared presets",
+    "description": "Follow a public GitHub recipe and review changes before adding them to your library.",
+    "followTitle": "Follow a preset",
+    "urlLabel": "Public GitHub recipe URL",
+    "urlPlaceholder": "https://github.com/owner/repository/blob/main/preset.json",
+    "preview": "Preview",
+    "revision": "Recipe revision: {{revision}}",
+    "members": "Recipe skills and sources",
+    "additions": "Add to preset",
+    "removals": "Remove from preset",
+    "conflicts": "Source conflicts",
+    "none": "None",
+    "removalHint": "Removed members leave the preset only. Skills stay in your library and existing agent deployments stay in place.",
+    "conflictHint": "These names already belong to skills with different sources. Resolve the source conflicts before applying.",
+    "deployHint": "Apply updates library membership only. Use the existing preset buttons in a workspace to deploy skills to agents.",
+    "apply": "Apply reviewed recipe",
+    "applied": "Preset recipe applied to your library",
+    "followedTitle": "Followed presets",
+    "checkAll": "Check all for updates",
+    "checkHint": "Recipes are checked at startup and hourly while the app is running. Available changes are never applied automatically.",
+    "empty": "No followed presets yet.",
+    "updateAvailable": "Update available",
+    "upToDate": "Recipe is up to date",
+    "notChecked": "Not checked yet",
+    "check": "Check and preview",
+    "review": "Review update",
+    "unfollow": "Unfollow",
+    "unfollowed": "Stopped following this preset",
+    "unfollowHint": "Unfollowing keeps the preset, your library skills, and existing agent deployments.",
+    "shareTitle": "Share a local preset",
+    "publishHint": "Copy a preset recipe as JSON, save it in a public GitHub repository, then share its GitHub file or raw URL. Recipients can paste that URL here to follow it.",
+    "localPreset": "Local preset",
+    "choosePreset": "Choose a preset",
+    "copyRecipe": "Copy recipe JSON",
+    "copied": "Recipe JSON copied",
+    "busy": "A preset operation is already running. Try again when it finishes.",
+    "updateNotification": "An update is available for the shared preset {{name}}.",
+    "checkFailed": "Could not check {{name}}: {{message}}",
+    "checkUnavailable": "Update check failed"
   }
 }
