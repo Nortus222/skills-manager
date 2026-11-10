@@ -1,7 +1,0 @@
-{
-  "bundle": {
-    "externalBin": [
-      "binaries/skills-manager-cli"
-    ]
-  }
-}

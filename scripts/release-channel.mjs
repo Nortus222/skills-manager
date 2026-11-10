@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -54,22 +53,6 @@ export function validateRelease(metadata, release, repository, tag) {
     return { platform, asset, signature: entry.signature, detached: assets.get(`${name}.sig`) };
   });
 }
-export function stageCli(root, target, profile = 'release') {
-  requireValue(/^[\w]+(?:-[\w]+)+$/.test(target), 'Invalid sidecar target triple');
-  requireValue(['debug', 'release'].includes(profile), 'Invalid sidecar build profile');
-  const extension = target.includes('windows') ? '.exe' : '';
-  const source = path.join(root, 'src-tauri', 'target', target, profile, `skills-manager-cli${extension}`);
-  requireValue(fs.existsSync(source) && fs.lstatSync(source).isFile(), `Missing compiled CLI companion: ${source}`);
-  const directory = path.join(root, 'src-tauri', 'binaries');
-  if (fs.existsSync(directory)) requireValue(!fs.lstatSync(directory).isSymbolicLink(), 'Sidecar directory is a symbolic link');
-  fs.mkdirSync(directory, { recursive: true });
-  const destination = path.join(directory, `skills-manager-cli-${target}${extension}`);
-  const staged = `${destination}.${randomUUID()}.tmp`;
-  try {
-    fs.copyFileSync(source, staged); fs.chmodSync(staged, 0o755); fs.renameSync(staged, destination);
-  } finally { fs.rmSync(staged, { force: true }); }
-  return destination;
-}
 function command(binary, args, options = {}) {
   const result = spawnSync(binary, args, { encoding: 'utf8', ...options });
   requireValue(result.status === 0, `${binary} failed: ${result.stderr || result.error?.message || result.status}`);
@@ -120,17 +103,13 @@ async function verify(repository, tag, publicKey) {
   } finally { fs.rmSync(temporary, { recursive: true, force: true }); }
 }
 async function main() {
-  const root = process.cwd();
-  if (process.argv[2] === 'stage-cli') {
-    console.log(stageCli(root, process.argv[3], process.argv[4] || 'release')); return;
-  }
   const repository = repositoryName(process.env.GITHUB_REPOSITORY);
   const config = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
   const publicKey = fs.readFileSync('src-tauri/updater.pub', 'utf8').trim();
   validateChannel(config, publicKey, repository);
   const tag = process.env.GITHUB_REF_NAME;
   if (process.argv[2] === 'verify') { await verify(repository, tag, publicKey); return; }
-  requireValue(process.argv[2] === 'preflight', 'Expected preflight, stage-cli, or verify');
+  requireValue(process.argv[2] === 'preflight', 'Expected preflight or verify');
   const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
   const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
   const cargoVersion = fs.readFileSync('src-tauri/Cargo.toml', 'utf8').split(/\n\[(?!package\])/)[0].match(/^version = "([^"]+)"/m)?.[1];

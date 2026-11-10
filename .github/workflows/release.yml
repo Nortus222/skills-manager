@@ -103,9 +103,6 @@ jobs:
           --bin skills-manager-cli
           --target ${{ matrix.target }}
 
-      - name: Stage bundled CLI companion
-        run: node scripts/release-channel.mjs stage-cli ${{ matrix.target }}
-
       - name: Extract changelog for current version
         id: changelog
         shell: bash
@@ -234,7 +231,7 @@ jobs:
           releaseDraft: true
           prerelease: false
           updaterJsonKeepUniversal: true
-          args: --target ${{ matrix.target }} --config src-tauri/tauri.release.conf.json
+          args: --target ${{ matrix.target }}
 
       - name: Verify macOS signature and notarization
         if: startsWith(matrix.platform, 'macos')
