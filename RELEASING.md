@@ -59,7 +59,8 @@ recovery copy securely before changing machines. It is not part of Git backup.
    the version commit through a PR. The imported upstream `v1.43.3` tag cannot
    serve as the first fork release. The `v1.43.4` draft was held back by a
    Windows MSI packaging failure; the corrected release uses `v1.43.5`. Keep
-   failed release tags in place and prepare a new version for code changes.
+   failed release tags in place and prepare a new version for application or
+   packaging changes.
 3. After the owner merges it, create and push the matching `vX.Y.Z` tag on that
    merged commit. A manual Build & Release run must also select that tag.
 4. The workflow checks channel/key/version consistency, signing-secret presence,
@@ -75,6 +76,14 @@ recovery copy securely before changing machines. It is not part of Git backup.
    macOS bundle and updater-archive notarization checks also remain required.
 7. Only then does the workflow publish the draft, making `latest.json` available
    to clients. Failed verification leaves the draft unpublished for inspection.
+
+If all builds and notarization passed but the verifier itself needs a correction,
+merge that correction through a PR, then rerun `scripts/release-channel.mjs verify`
+from the corrected checkout with the existing release tag in `GITHUB_REF_NAME`.
+Only after every payload passes may that existing draft be published. A
+verifier-only correction does not require rebuilding or retagging unchanged
+signed application artifacts. GitHub's temporary `untagged-…` draft asset URLs
+differ from the final tagged URLs that must remain in `latest.json`.
 
 ## Bootstrap installed apps
 

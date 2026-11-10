@@ -38,6 +38,27 @@ test('every platform is signed and points to an existing asset on this fork rele
   assert.deepEqual(entries.map((entry) => entry.platform), platforms);
 });
 
+test('accepts temporary draft asset URLs while metadata names the final tagged URLs', () => {
+  const { release, metadata } = fixture();
+  release.draft = true;
+  for (const asset of release.assets) {
+    if (asset.browser_download_url) asset.browser_download_url = asset.browser_download_url.replace(tag, 'untagged-6751d11e6697ce5200d6');
+  }
+  assert.equal(validateRelease(metadata, release, repository, tag).length, 5);
+  release.draft = false;
+  assert.throws(() => validateRelease(metadata, release, repository, tag));
+  release.draft = true;
+  const first = release.assets[0];
+  const draftURL = first.browser_download_url;
+  first.browser_download_url = draftURL.replace(repository, 'someone/else');
+  assert.throws(() => validateRelease(metadata, release, repository, tag));
+  first.browser_download_url = draftURL.replace('darwin-aarch64.bundle', 'wrong.bundle');
+  assert.throws(() => validateRelease(metadata, release, repository, tag));
+  first.browser_download_url = draftURL;
+  metadata.platforms['darwin-aarch64'].url = metadata.platforms['darwin-aarch64'].url.replace(tag, 'untagged-6751d11e6697ce5200d6');
+  assert.throws(() => validateRelease(metadata, release, repository, tag));
+});
+
 for (const [name, corrupt] of [
   ['foreign repository', (m) => { m.platforms['darwin-aarch64'].url = 'https://github.com/xingkongliang/skills-manager/releases/download/v1.43.4/darwin-aarch64.bundle'; }],
   ['different release tag', (m) => { m.platforms['darwin-aarch64'].url = m.platforms['darwin-aarch64'].url.replace(tag, 'v1.43.3'); }],
