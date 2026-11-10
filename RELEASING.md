@@ -57,15 +57,18 @@ recovery copy securely before changing machines. It is not part of Git backup.
 2. Prepare a new version in a feature worktree with
    `npm run release:prepare -- patch`. Fill in both changelogs, verify, and submit
    the version commit through a PR. The imported upstream `v1.43.3` tag cannot
-   serve as the first fork release; use a new version such as `v1.43.4`.
+   serve as the first fork release. The `v1.43.4` draft was held back by a
+   Windows MSI packaging failure; the corrected release uses `v1.43.5`. Keep
+   failed release tags in place and prepare a new version for code changes.
 3. After the owner merges it, create and push the matching `vX.Y.Z` tag on that
    merged commit. A manual Build & Release run must also select that tag.
 4. The workflow checks channel/key/version consistency, signing-secret presence,
    and that the release commit is on `origin/main`. It refuses to overwrite a
    published release.
-5. All five targets build. The CLI is staged through
-   `scripts/release-channel.mjs stage-cli <target>` and embedded by
-   `src-tauri/tauri.release.conf.json` before signing and notarization.
+5. All five targets build the CLI before the app. Tauri automatically packages
+   the crate's Cargo binaries beside the application before macOS signing and
+   notarization. Do not also list the CLI in `bundle.externalBin`: WiX rejects
+   the two components that would install the same Windows filename.
 6. The draft stays unpublished until all builds pass. Every manifest payload is
    checked against this repository and tag, downloaded from the draft, and
    cryptographically verified with `minisign` and the embedded public key.

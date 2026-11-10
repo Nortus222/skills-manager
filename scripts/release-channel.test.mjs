@@ -1,10 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { validateChannel, validateRelease, stageCli } from './release-channel.mjs';
+import { validateChannel, validateRelease } from './release-channel.mjs';
 
 const repository = 'Nortus222/skills-manager';
 const tag = 'v1.43.4';
@@ -67,23 +65,6 @@ test('rejects platform names that could escape verification storage', () => {
   const { release, metadata } = fixture();
   metadata.platforms['../../outside'] = { ...metadata.platforms['windows-x86_64'] };
   assert.throws(() => validateRelease(metadata, release, repository, tag));
-});
-
-test('stages the CLI companion for both native and Windows bundles', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'release-sidecar-'));
-  try {
-    for (const target of ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc']) {
-      const extension = target.includes('windows') ? '.exe' : '';
-      const source = path.join(root, 'src-tauri', 'target', target, 'release', `skills-manager-cli${extension}`);
-      fs.mkdirSync(path.dirname(source), { recursive: true }); fs.writeFileSync(source, 'compiled-cli');
-      const staged = stageCli(root, target, 'release');
-      assert.equal(path.basename(staged), `skills-manager-cli-${target}${extension}`);
-      assert.equal(fs.readFileSync(staged, 'utf8'), 'compiled-cli');
-    }
-    assert.throws(() => stageCli(root, '../escape', 'release'));
-    assert.throws(() => stageCli(root, 'aarch64-apple-darwin', 'invalid'));
-    assert.throws(() => stageCli(root, 'x86_64-unknown-linux-gnu', 'release'), /missing/i);
-  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
 test('preflight refuses a protected signing key without its password before running release tools', () => {

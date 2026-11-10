@@ -5,10 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.43.5] - 2026-11-09
+
+### Release Overview
+- First public Nortus fork release, with shareable presets, a signed fork update channel, and corrected Windows installer packaging.
+
+### User-facing
+- Export skill-source recipes, follow individual public GitHub presets, and review their updates separately from your private library backup. Local preset membership edits are preserved; subscriptions are stored on the current machine.
+- Followed presets are checked at startup and hourly while the app runs. Applying a preview installs missing skills into the library; deployment remains a separate action.
+- App updates use `Nortus222/skills-manager` and the fork's updater key. Install the fork once manually if you currently use an upstream build.
+- Windows installers include one CLI companion. The redundant sidecar entry added for `1.43.4` duplicated Tauri's automatically bundled Cargo binary and caused WiX's ICE30 validation to reject the MSI.
+
+### Developer & Governance
+- Remove the redundant sidecar overlay and staging helper. Keep all installer formats, the CLI build before the desktop build, and the existing signing, notarization and publication gates.
+- A focused Windows packaging run reproduced ICE30 with the previous configuration and produced a valid MSI after removing the duplicate. The `v1.43.4` tag and unpublished draft remain intact.
+
+Release notes prepared by gpt-6.1-sol via Codex in T3 Code, on behalf of Ihor.
+
 ## [1.43.4] - 2026-11-09
 
 ### Release Overview
-- First release from the Nortus fork, adding shareable presets and a signed app update channel hosted in `Nortus222/skills-manager`.
+- Unpublished draft. macOS and Linux builds passed, but duplicate CLI packaging blocked the Windows MSI. See `1.43.5` for the correction and first public fork release.
 
 ### User-facing
 - Export a preset as a JSON recipe containing skill source references, then share its public GitHub URL independently of your private library backup.
