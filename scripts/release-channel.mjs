@@ -48,7 +48,13 @@ export function validateRelease(metadata, release, repository, tag) {
     const name = decodeURIComponent(tail);
     requireValue(name && !/[\\/]/.test(name), `${platform} URL has an invalid asset name`);
     const asset = assets.get(name);
-    requireValue(asset && asset.browser_download_url === entry.url, `${platform} payload asset is missing or has a different URL`);
+    // GitHub gives drafts temporary URLs; verification downloads by authenticated asset ID.
+    const draftPrefix = `https://github.com/${repository}/releases/download/untagged-`;
+    const draftParts = asset?.browser_download_url?.startsWith(draftPrefix)
+      ? asset.browser_download_url.slice(draftPrefix.length).split('/') : [];
+    const draftMatches = release.draft === true && draftParts.length === 2
+      && /^[a-f0-9]{1,64}$/.test(draftParts[0]) && draftParts[1] === tail;
+    requireValue(asset && (asset.browser_download_url === entry.url || draftMatches), `${platform} payload asset is missing or has a different URL`);
     requireValue(assets.has(`${name}.sig`), `${platform} detached signature asset is missing`);
     return { platform, asset, signature: entry.signature, detached: assets.get(`${name}.sig`) };
   });
