@@ -1,0 +1,13 @@
+{
+  "bundle": {
+    "windows": {
+      "wix": {
+        "upgradeCode": "08c191c4-bdbb-5964-9f50-bc2b2edafd1a",
+        "template": "windows/main.wxs"
+      },
+      "nsis": {
+        "template": "windows/installer.nsi"
+      }
+    }
+  }
+}

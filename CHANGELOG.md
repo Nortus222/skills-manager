@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.43.6] - 2026-11-10
+
+### Release Overview
+- The fork is now EM Skills, with a distinct navy, teal and white EM icon.
+
+### User-facing
+- New app name, window title, sidebar logo, tray icon and tray labels distinguish EM Skills from upstream Skills Manager. The Settings and onboarding screens use the same name in every language.
+- Windows installers and the Apps listing use EM Skills while retaining the previous installation's upgrade identity and location. The CLI command, library, presets and private backup remain in their existing locations.
+- Release notes are now published in English by default. The app's GitHub and website links open this fork.
+
+### Developer & Governance
+- Preserve the bundle identifier, updater endpoint, signing key and executable names so the signed 1.43.5 installation can receive this update. macOS updates keep the existing app directory and replace its bundle metadata and icon.
+- Generate desktop, web and tray artwork from one SVG using the pinned Tauri CLI. Keep platform installer checks and notarization gates active for the renamed bundle.
+
+Release notes prepared by gpt-6.1-sol via Codex in T3 Code, on behalf of Ihor.
+
 ## [1.43.5] - 2026-11-09
 
 ### Release Overview

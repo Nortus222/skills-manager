@@ -1,0 +1,42 @@
+name: Windows installer migration
+
+on:
+  pull_request:
+    paths:
+      - 'src-tauri/windows/**'
+      - 'src-tauri/tauri*.conf.json'
+      - 'src-tauri/Cargo.toml'
+      - 'scripts/test-windows-installer.ps1'
+      - 'scripts/windows-installer.test.mjs'
+      - '.github/workflows/windows-installer.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src-tauri/windows/**'
+      - 'src-tauri/tauri*.conf.json'
+      - 'src-tauri/Cargo.toml'
+      - 'scripts/test-windows-installer.ps1'
+      - 'scripts/windows-installer.test.mjs'
+      - '.github/workflows/windows-installer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install-update-uninstall:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
+      - run: npm ci
+      - name: Verify installer ownership and template invariants
+        run: node --test scripts/windows-installer.test.mjs
+      - name: Verify installer rename and upgrade lifecycle in an isolated fixture
+        shell: pwsh
+        run: ./scripts/test-windows-installer.ps1

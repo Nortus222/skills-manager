@@ -87,6 +87,16 @@ differ from the final tagged URLs that must remain in `latest.json`.
 
 ## Bootstrap installed apps
 
+Version 1.43.6 changes the display name and icon to EM Skills. Keep the bundle
+identifier, executable/CLI names, updater key and library paths stable. Windows
+uses its existing MSI upgrade code and NSIS registration identity while showing
+the new product name. Test an existing installation, not only a fresh installer.
+
+An in-app macOS update retains the existing `.app` directory name; the app's
+display name and icon come from the updated bundle. Leave the signed 1.43.5 app
+installed until the 1.43.6 update has been downloaded, installed and restarted
+through Settings. Do not replace it manually when testing the updater.
+
 Apps built before the fork channel change still trust upstream's endpoint and
 key. Install a build containing this channel configuration once; those apps can
 then receive subsequent fork releases through Settings → Check for updates.

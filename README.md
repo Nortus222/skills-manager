@@ -2,14 +2,16 @@
   <img src="assets/icon.png" width="80" />
 </p>
 
-<h1 align="center">Skills Manager</h1>
+<h1 align="center">EM Skills</h1>
+
+EM Skills is the Nortus222 fork of [Skills Manager](https://github.com/xingkongliang/skills-manager), with shared presets and its own signed update channel. Upstream MIT licensing and credits are retained.
 
 <p align="center">
   One app to manage AI agent skills across all your coding tools.
 </p>
 
 <p align="center">
-  <strong><a href="https://skillsmanager.dev">skillsmanager.dev</a></strong>
+  <strong><a href="https://github.com/Nortus222/skills-manager/releases/latest">Download EM Skills</a></strong>
 </p>
 
 <p align="center">
@@ -33,7 +35,7 @@
 </p>
 
 <p align="center">
-  <a href="https://skills.sh/xingkongliang/skills-manager"><img src="https://skills.sh/b/xingkongliang/skills-manager" alt="manage-skills on skills.sh" /></a>
+  <a href="./skills/manage-skills/SKILL.md">manage-skills for EM Skills</a>
 </p>
 
 <p align="center">
@@ -66,9 +68,9 @@
 
 - **Unified skill library** — Install skills from Git repos, local folders, `.zip` / `.skill` archives, or the [skills.sh](https://skills.sh) marketplace. Everything goes into one central repo, which defaults to `~/.skills-manager` and can be customized in **Settings**.
 - **Marketplace** — Browse popular skills from the marketplace and find them with keyword search.
-- **Your agents can manage skills** — Claude Code, Codex, Cursor and the rest can install a skill, deploy it to another agent, or report what is where, by driving Skills Manager instead of writing into an agent's folder behind its back — so sources, presets, update tracking and per-agent state stay intact. The Dashboard sets this up in one click; see [Let your agents manage skills](#let-your-agents-manage-skills).
+- **Your agents can manage skills** — Claude Code, Codex, Cursor and the rest can install a skill, deploy it to another agent, or report what is where, by driving EM Skills instead of writing into an agent's folder behind its back — so sources, presets, update tracking and per-agent state stay intact. The Dashboard sets this up in one click; see [Let your agents manage skills](#let-your-agents-manage-skills).
 - **Presets** — Group skills into named presets. In any workspace, click a preset pill to instantly activate or deactivate all its skills for the current agent scope. Applying a preset is a one-time copy, not a live sync. The sidebar lists all presets for quick access.
-- **Global Workspace** — Each agent gets its own page listing every skill in its global folder — including ones installed outside Skills Manager — so the view always reflects what the agent actually sees. Add or remove skills per agent, or use the All Agents overview to manage every installed agent at once.
+- **Global Workspace** — Each agent gets its own page listing every skill in its global folder — including ones installed outside EM Skills — so the view always reflects what the agent actually sees. Add or remove skills per agent, or use the All Agents overview to manage every installed agent at once.
 - **Project Workspaces** — View and manage project-local skill folders for supported agents, compare them with your central library, and sync changes in either direction. Supports nested skill directories and per-agent assignment when exporting.
 - **Linked Workspaces** — Point to any directory as a skills root — useful for skills that live outside the default agent paths. Managed as a standalone workspace without participating in global preset sync.
 - **Multi-tool sync** — Sync skills to any supported tool via symlink or copy with a single click. Every skill card shows an agent icon badge per enabled agent — click a badge to install or remove that skill for that agent right from the card, with the badge reflecting live sync state.
@@ -87,24 +89,11 @@
 
 ### macOS
 
-Install with [Homebrew](https://brew.sh):
-
-```bash
-brew install --cask skills-manager
-```
-
-You can also download the `.dmg` for your Mac from the [latest release](https://github.com/xingkongliang/skills-manager/releases/latest).
+Download the `.dmg` for your Mac from the [latest EM Skills release](https://github.com/Nortus222/skills-manager/releases/latest).
 
 ### Windows and Linux
 
-Download the installer for your platform from the [latest release](https://github.com/xingkongliang/skills-manager/releases/latest): `.exe` or `.msi` for Windows, and `.AppImage`, `.deb`, or `.rpm` for Linux (x64 and arm64).
-
-On Windows you can also install with [Scoop](https://scoop.sh):
-
-```powershell
-scoop bucket add extras
-scoop install extras/skills-manager
-```
+Download the installer for your platform from the [latest release](https://github.com/Nortus222/skills-manager/releases/latest): `.exe` or `.msi` for Windows, and `.AppImage`, `.deb`, or `.rpm` for Linux (x64 and arm64).
 
 Every installer ships the CLI inside the app — see [Where the binary lives](#where-the-binary-lives).
 
@@ -119,14 +108,14 @@ Every installer ships the CLI inside the app — see [Where the binary lives](#w
 
 ## Let your agents manage skills
 
-Claude Code, Codex, Cursor and the rest can install a skill, deploy it to another agent, or report what is where — by driving Skills Manager rather than writing into an agent's folder behind its back. That is what keeps source metadata, preset membership, update tracking and cross-agent deployment state intact.
+Claude Code, Codex, Cursor and the rest can install a skill, deploy it to another agent, or report what is where — by driving EM Skills rather than writing into an agent's folder behind its back. That is what keeps source metadata, preset membership, update tracking and cross-agent deployment state intact.
 
 The Dashboard offers a one-time setup: pick the agents that should be able to do it, and the app installs the [`manage-skills`](skills/manage-skills/SKILL.md) skill and deploys it to exactly those. Afterwards it is an ordinary library skill — adding or removing an agent is the agent badge row on its own card. No PATH setup is involved: the app publishes a copy of its CLI where agents look for it.
 
 It is also an ordinary published skill, so it can be installed without the app:
 
 ```bash
-npx skills add xingkongliang/skills-manager
+npx skills add Nortus222/skills-manager
 ```
 
 ## Shared presets in this fork
@@ -293,7 +282,7 @@ The Windows app cannot create links inside WSL, so it can only copy skills there
 
 ```bash
 mkdir -p ~/.local/bin && curl -L -o ~/.local/bin/skills-manager-cli \
-  https://github.com/xingkongliang/skills-manager/releases/latest/download/skills-manager-cli-Linux-x64
+  https://github.com/Nortus222/skills-manager/releases/latest/download/skills-manager-cli-Linux-x64
 chmod +x ~/.local/bin/skills-manager-cli
 export PATH="$HOME/.local/bin:$PATH"
 skills-manager-cli agents add-custom hermes-work --path ~/.hermes/profiles/work/skills
@@ -330,9 +319,9 @@ npm run cli:build
 
 ## Troubleshooting
 
-**macOS refuses to open the app.** Releases from **v1.29.0** onward are signed with an Apple Developer ID certificate and notarized, so they open normally. If you see "Apple could not verify…" or "App is damaged", you are on v1.28.5 or older — upgrading is the fix. (Upgrading changes the code signature, so macOS may ask once more for the `skills-manager-git-backup` keychain entry; click **Always Allow**.)
+**macOS refuses to open the app.** EM Skills releases are signed with an Apple Developer ID certificate and notarized. Download the [latest fork release](https://github.com/Nortus222/skills-manager/releases/latest); report a persistent failure with the logs exported from Settings.
 
-Anything else — [open an issue](https://github.com/xingkongliang/skills-manager/issues), and attach the bundle from **Settings → Export Logs**.
+Anything else — [open an issue](https://github.com/Nortus222/skills-manager/issues), and attach the bundle from **Settings → Export Logs**.
 
 ## Star History
 

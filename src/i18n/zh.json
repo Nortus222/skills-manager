@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Skills Manager"
+    "name": "EM Skills"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -18,7 +18,7 @@
   },
   "help": {
     "eyebrow": "操作指南",
-    "title": "快速上手 Skills Manager",
+    "title": "快速上手 EM Skills",
     "description": "最快路径：安装 Skills → 打开全局工作区 → 点击 Preset 标签激活。按 ⌘K 可随时呼出命令面板。按需使用项目工作区、Git 备份和设置。",
     "items": {
       "workflows": {
@@ -39,7 +39,7 @@
       },
       "global": {
         "title": "全局工作区",
-        "description": "每个 Agent 都有自己的页面，列出其全局目录里的所有 Skills（包括不是通过 Skills Manager 安装的），与 Agent 实际看到的内容保持一致。点击 + 添加 Skills 从中央库挑选，并通过内嵌的 Agent 标签选择目标；也可通过「全部 Agents」总览跨所有已安装 Agent 统一管理。仅存在于某个 Agent 目录的 Skills 可直接在卡片上删除。"
+        "description": "每个 Agent 都有自己的页面，列出其全局目录里的所有 Skills（包括不是通过 EM Skills 安装的），与 Agent 实际看到的内容保持一致。点击 + 添加 Skills 从中央库挑选，并通过内嵌的 Agent 标签选择目标；也可通过「全部 Agents」总览跨所有已安装 Agent 统一管理。仅存在于某个 Agent 目录的 Skills 可直接在卡片上删除。"
       },
       "projects": {
         "title": "项目工作区",
@@ -83,7 +83,7 @@
   },
   "agentControl": {
     "title": "让你的 Agent 管理 Skills",
-    "body": "让 Claude Code、Codex 等直接替你安装和部署 Skill，来源与部署状态仍由 Skills Manager 记录。",
+    "body": "让 Claude Code、Codex 等直接替你安装和部署 Skill，来源与部署状态仍由 EM Skills 记录。",
     "cta": "去启用",
     "pickAgents": "让哪些 Agent 可以这么做",
     "confirm": "为 {{count}} 个启用",
@@ -654,7 +654,7 @@
     "help": "帮助",
     "website": "官网",
     "about": "关于",
-    "version": "Skills Manager {{version}}",
+    "version": "EM Skills {{version}}",
     "tagline": "跨平台。极简、高效、无感多 Preset 切换。",
     "checkUpdate": "检查更新",
     "checking": "检查中…",
@@ -666,7 +666,7 @@
     "restartToApply": "更新已安装，重启应用即可生效。",
     "restartNow": "立即重启",
     "viewUpdate": "查看",
-    "updateRelocate": "请先把 Skills Manager 移到「应用程序」文件夹，并从那里启动，才能在应用内更新。",
+    "updateRelocate": "请先把 EM Skills 移到「应用程序」文件夹，并从那里启动，才能在应用内更新。",
     "updateError": "自动更新失败，正在跳转下载页…",
     "reportIssue": "报告问题",
     "reportIssueHint": "复制应用 / 系统信息和最近日志摘要到剪贴板并打开新的 GitHub issue",
@@ -677,7 +677,7 @@
     "exportLogsHint": "把最近日志和操作记录打包成 zip 保存到下载文件夹",
     "exportLogsDone": "已导出日志（{{count}} 个文件），请把 zip 拖到 GitHub issue 附件区。",
     "exportLogsFailed": "导出日志失败。",
-    "panicBanner": "上次运行 Skills Manager 时发生崩溃（{{time}}）。",
+    "panicBanner": "上次运行 EM Skills 时发生崩溃（{{time}}）。",
     "repoWarning_config_unreadable": "中央库配置文件已损坏或无法读取，本次启动已回退到默认路径（~/.skills-manager）。如果技能库看起来是空的，你的数据仍在之前配置的路径里——请到「中央仓库路径」重新指定。",
     "repoWarning_repo_path_invalid": "配置的中央仓库路径无效，本次启动已回退到默认路径（~/.skills-manager）。如果技能库看起来是空的，请到「中央仓库路径」重新指定数据所在位置。",
     "repoWarning_migration_incomplete": "将中央库迁移到新位置的操作没有完成，本次启动仍在使用原位置的现有技能库——数据没有丢失。要完成迁移，请打开设置，把「中央仓库路径」指向一个空的、可写的文件夹（点「编辑」可查看你选择的目标位置），然后完全退出应用（包括托盘）再重新打开。迁移成功前，当前技能库会留在原地——请不要删除它。",
