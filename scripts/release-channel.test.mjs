@@ -31,6 +31,16 @@ test('fork detection and installer config trust the fork-owned public key and en
   assert.throws(() => validateChannel(config, publicKey, 'someone/else'), /endpoint|repository/i);
 });
 
+test('fork branding preserves existing installation and update identity', () => {
+  const config = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+  const windows = JSON.parse(fs.readFileSync('src-tauri/tauri.windows.conf.json', 'utf8'));
+  assert.equal(config.productName, 'EM Skills');
+  assert.equal(config.identifier, 'com.agentskills.desktop');
+  assert.equal(windows.productName, undefined);
+  assert.equal(windows.bundle.windows.wix.upgradeCode, '08c191c4-bdbb-5964-9f50-bc2b2edafd1a');
+  assert.match(fs.readFileSync('src-tauri/Cargo.toml', 'utf8'), /^default-run = "skills-manager"$/m);
+});
+
 test('every platform is signed and points to an existing asset on this fork release', () => {
   const { release, metadata } = fixture();
   const entries = validateRelease(metadata, release, repository, tag);

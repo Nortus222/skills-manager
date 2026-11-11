@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Skills Manager"
+    "name": "EM Skills"
   },
   "sidebar": {
     "dashboard": "대시보드",
@@ -17,7 +17,7 @@
   },
   "help": {
     "eyebrow": "가이드",
-    "title": "Skills Manager 빠른 시작",
+    "title": "EM Skills 빠른 시작",
     "description": "스킬을 설치하고 전역 워크스페이스를 연 뒤 프리셋 버튼을 눌러 활성화하는 방법이 가장 빠릅니다. 언제든 ⌘K를 누르면 명령 팔레트가 열립니다. 필요에 따라 프로젝트 워크스페이스, Git 백업, 설정을 사용합니다.",
     "items": {
       "workflows": {
@@ -38,7 +38,7 @@
       },
       "global": {
         "title": "전역 워크스페이스",
-        "description": "에이전트마다 전용 페이지가 있고, 전역 폴더에 있는 스킬을 Skills Manager 밖에서 설치한 것까지 모두 보여 줍니다. 그래서 화면이 에이전트가 실제로 보는 상태와 같습니다. + 스킬 추가로 중앙 라이브러리에서 가져오면서 대상 에이전트를 그 자리에서 고르거나, 전체 에이전트 개요에서 설치된 에이전트를 한꺼번에 관리합니다. 에이전트 폴더에만 있는 스킬은 카드에서 바로 삭제할 수 있습니다."
+        "description": "에이전트마다 전용 페이지가 있고, 전역 폴더에 있는 스킬을 EM Skills 밖에서 설치한 것까지 모두 보여 줍니다. 그래서 화면이 에이전트가 실제로 보는 상태와 같습니다. + 스킬 추가로 중앙 라이브러리에서 가져오면서 대상 에이전트를 그 자리에서 고르거나, 전체 에이전트 개요에서 설치된 에이전트를 한꺼번에 관리합니다. 에이전트 폴더에만 있는 스킬은 카드에서 바로 삭제할 수 있습니다."
       },
       "projects": {
         "title": "프로젝트 워크스페이스",
@@ -645,7 +645,7 @@
     "help": "도움말",
     "website": "웹사이트",
     "about": "정보",
-    "version": "Skills Manager {{version}}",
+    "version": "EM Skills {{version}}",
     "tagline": "운영체제와 상관없이 여러 프리셋을 가볍고 빠르게 전환합니다.",
     "checkUpdate": "업데이트 확인",
     "checking": "확인 중…",
@@ -657,7 +657,7 @@
     "restartToApply": "업데이트를 설치했습니다. 앱을 다시 시작하면 적용됩니다.",
     "restartNow": "지금 다시 시작",
     "viewUpdate": "보기",
-    "updateRelocate": "앱 안에서 업데이트하려면 Skills Manager를 응용 프로그램 폴더로 옮긴 뒤 그곳에서 실행하세요.",
+    "updateRelocate": "앱 안에서 업데이트하려면 EM Skills를 응용 프로그램 폴더로 옮긴 뒤 그곳에서 실행하세요.",
     "updateError": "자동 업데이트에 실패했습니다. 다운로드 페이지를 엽니다…",
     "reportIssue": "이슈 신고",
     "reportIssueHint": "앱과 OS 정보, 최근 로그 일부를 클립보드에 복사하고 GitHub 이슈를 새로 엽니다",
@@ -668,7 +668,7 @@
     "exportLogsHint": "최근 로그와 활동 기록을 zip 파일로 묶어 다운로드 폴더에 저장합니다",
     "exportLogsDone": "로그를 내보냈습니다(파일 {{count}}개). zip 파일을 GitHub 이슈로 끌어다 놓으세요.",
     "exportLogsFailed": "로그를 내보내지 못했습니다.",
-    "panicBanner": "지난 세션에서 Skills Manager가 비정상 종료됐습니다({{time}}).",
+    "panicBanner": "지난 세션에서 EM Skills가 비정상 종료됐습니다({{time}}).",
     "repoWarning_config_unreadable": "중앙 라이브러리 설정 파일을 읽을 수 없거나 손상돼서 이번 세션은 기본 위치(~/.skills-manager)를 씁니다. 라이브러리가 비어 보인다면 데이터는 이전에 설정한 경로에 그대로 있습니다. “중앙 저장소 경로”를 그 경로로 되돌리세요.",
     "repoWarning_repo_path_invalid": "설정된 중앙 저장소 경로가 올바르지 않아서 이번 세션은 기본 위치(~/.skills-manager)를 씁니다. 라이브러리가 비어 보인다면 “중앙 저장소 경로”를 데이터가 있는 곳으로 다시 지정하세요.",
     "repoWarning_migration_incomplete": "중앙 라이브러리를 새 위치로 옮기는 작업을 마치지 못해서 이번 세션은 기존 위치의 라이브러리를 그대로 씁니다. 잃은 데이터는 없습니다. 옮기기를 끝내려면 설정에서 “중앙 저장소 경로”를 비어 있고 쓸 수 있는 폴더로 지정한 뒤(수정을 누르면 앞서 고른 대상이 보입니다) 앱을 다시 시작하세요. 옮기기가 끝날 때까지 지금 라이브러리는 그 자리에 남으니 지우지 마세요.",

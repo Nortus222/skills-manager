@@ -385,8 +385,8 @@ export function Sidebar() {
         {/* App logo — follows the platform's title-bar spacing. */}
         <div className="flex items-center px-3 gap-3 pb-2.5 shrink-0">
           <img
-            src="/icons/32x32.png"
-            alt="logo"
+            src="/em-skills.svg"
+            alt="EM Skills"
             className="w-[24px] h-[24px] shrink-0"
           />
           <span className="text-[17px] font-semibold text-secondary tracking-tight truncate leading-[22px]">

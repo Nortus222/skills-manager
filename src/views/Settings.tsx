@@ -198,8 +198,8 @@ export function Settings() {
   const [addingCustom, setAddingCustom] = useState(false);
   const [showMoreAgents, setShowMoreAgents] = useState(false);
 
-  const GITHUB_URL = "https://github.com/xingkongliang/skills-manager";
-  const WEBSITE_URL = "https://skillsmanager.dev";
+  const GITHUB_URL = "https://github.com/Nortus222/skills-manager";
+  const WEBSITE_URL = "https://github.com/Nortus222/skills-manager#readme";
 
   const startEditPath = useCallback((key: string, currentPath: string) => {
     setEditingPathKey(key);
@@ -589,7 +589,7 @@ export function Settings() {
             enabledCustomCount > 0 ? `${enabledCustomCount} custom` : "",
           ].filter(Boolean).join(", ");
       const parts = [
-        "**Diagnostics** (auto-collected by Skills Manager)",
+        "**Diagnostics** (auto-collected by EM Skills)",
         "",
         `- App version: \`${info.app_version}\``,
         `- OS: \`${info.os} ${info.os_version} (${info.arch})\``,

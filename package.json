@@ -1,12 +1,12 @@
 {
   "name": "skills-manager",
   "private": true,
-  "version": "1.43.5",
+  "version": "1.43.6",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "vitest run src && node --test scripts/release-channel.test.mjs",
+    "test": "vitest run src && node --test scripts/release-channel.test.mjs scripts/windows-installer.test.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint . && node scripts/check-ui-spec.mjs && node scripts/check-i18n.mjs",
     "preview": "vite preview",
